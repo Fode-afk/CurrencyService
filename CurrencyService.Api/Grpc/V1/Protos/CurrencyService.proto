@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option csharp_namespace = "CurrencyService.Api.Grpc.V1.Protos";
+
+service CurrencyServiceV1
+{
+    rpc Convert(ConvertRequest) returns (ConvertResponse);
+}
+
+message ConvertRequest
+{
+    int64 sourceMoneyMinor = 1;
+    string sourceCurrency = 2;
+    string targetCurrency = 3;
+}
+
+message ConvertResponse
+{
+    int64 convertedMoneyMinor = 1;
+}

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="CurrencyService.Api/CurrencyService.Api.csproj" />
+  <Project Path="CurrencyService.Application/CurrencyService.Application.csproj" Id="718900bf-e0fa-42ab-95c1-8f171d6f8863" />
+  <Project Path="CurrencyService.Infrastructure/CurrencyService.Infrastructure.csproj" Id="55f3c244-fe94-4f6c-bfb7-e7eeeeb53633" />
+</Solution>
