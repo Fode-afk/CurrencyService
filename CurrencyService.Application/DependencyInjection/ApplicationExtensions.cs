@@ -1,7 +1,6 @@
 ﻿using CurrencyService.Application.DependencyInjection;
 using FluentValidation;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using migApp.Shared.Validation;
 
@@ -9,7 +8,7 @@ namespace CurrencyService.Application.DependencyInjection;
 
 public static class ApplicationExtensions
 {
-    public static IServiceCollection AddApplication(this IServiceCollection services, IConfiguration configuration) =>
+    public static IServiceCollection AddApplication(this IServiceCollection services) =>
         services
             .AddValidators()
             .AddMediatR();
