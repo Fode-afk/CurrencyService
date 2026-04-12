@@ -1,13 +1,14 @@
-﻿using CurrencyService.Application.Interfaces;
+﻿using CurrencyService.Application.Interfaces.Data;
+using CurrencyService.Application.Interfaces.Services;
 using CurrencyService.Infrastructure.BackgroundJobs;
 using CurrencyService.Infrastructure.Data;
-using CurrencyService.Infrastructure.DependencyInjection;
 using CurrencyService.Infrastructure.Services;
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using migApp.Shared.Caching;
-using migApp.Shared.Grpc;
 using ZiggyCreatures.Caching.Fusion;
 using ZiggyCreatures.Caching.Fusion.Backplane.StackExchangeRedis;
 
@@ -21,16 +22,31 @@ public static class InfrastructureExtensions
         services
             .AddHttpClient()
             .AddServices()
+            .AddDatabase(configuration)
             .AddCache(configuration)
-            .AddGrpc();
+            .AddMassTransit(configuration);
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
-        services.AddScoped<IExchangeRateRepository, CachedExchangeRateRepository>();
-        services.AddScoped<IExchangeRateService, ExchangeRateService>();
         services.AddScoped<IExchangeRateProvider, ExchangeRateApiProvider>();
 
-        services.AddHostedService<ExchangeRateBackgroundService>();
+        services.AddHostedService<Worker>();
+
+        return services;
+    }
+       
+
+    private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
+    {
+        string? connectionString = configuration.GetConnectionString("Database");
+
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlServer(connectionString, sqlOptions =>
+            {
+                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", Schemas.ExchangeRates);
+            }));
+
+        services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
         return services;
     }
@@ -79,11 +95,28 @@ public static class InfrastructureExtensions
         return services;
     }
 
-    private static IServiceCollection AddGrpc(this IServiceCollection services)
+    private static IServiceCollection AddMassTransit(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddGrpc(options =>
-        { 
-            options.Interceptors.Add<GrpcExceptionInterceptor>(); 
+        services.AddMassTransit(x =>
+        {
+            x.SetKebabCaseEndpointNameFormatter();         
+
+            x.AddEntityFrameworkOutbox<AppDbContext>(o =>
+            {
+                o.UseSqlServer();
+                o.UseBusOutbox();
+            });
+
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host(configuration["RabbitMQ:Host"]!, "/", h =>
+                {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
+
+                cfg.ConfigureEndpoints(context);
+            });
         });
 
         return services;

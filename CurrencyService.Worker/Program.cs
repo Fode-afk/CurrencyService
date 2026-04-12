@@ -1,13 +1,15 @@
+using CurrencyService.Worker;
 using CurrencyService.Application.DependencyInjection;
 using CurrencyService.Infrastructure.DependencyInjection;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddHostedService<Worker>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
-var app = builder.Build();
+var host = builder.Build();
 
-await app.MigrateDatabaseAsync();
+await host.MigrateDatabaseAsync();
 
-app.Run();
+host.Run();

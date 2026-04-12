@@ -1,13 +1,12 @@
-﻿using CurrencyService.Application.Interfaces;
+using CurrencyService.Application.Features.Commands.UpdateExchangeRates;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace CurrencyService.Infrastructure.BackgroundJobs;
 
-internal sealed class ExchangeRateBackgroundService(
-    IServiceScopeFactory scopeFactory,
-    ILogger<ExchangeRateBackgroundService> logger) : BackgroundService
+internal sealed class Worker(ILogger<Worker> logger, IServiceScopeFactory scopeFactory) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -16,9 +15,12 @@ internal sealed class ExchangeRateBackgroundService(
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var exchangeRateService = scope.ServiceProvider.GetRequiredService<IExchangeRateService>();
+                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                await exchangeRateService.UpdateExchangeRatesAsync(stoppingToken);
+                var result = await mediator.Send(new UpdateExchangeRatesCommand(), cancellationToken: stoppingToken);
+
+                if (result.IsFailure)
+                    logger.LogError("Failed to update exchange rates");
             }
             catch (Exception ex)
             {

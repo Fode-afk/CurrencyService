@@ -1,4 +1,4 @@
-﻿using CurrencyService.Application.Interfaces;
+﻿using CurrencyService.Application.Interfaces.Services;
 using System.Text.Json;
 
 namespace CurrencyService.Infrastructure.Services;

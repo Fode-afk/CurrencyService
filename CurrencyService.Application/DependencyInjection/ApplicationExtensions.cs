@@ -11,7 +11,8 @@ public static class ApplicationExtensions
     public static IServiceCollection AddApplication(this IServiceCollection services) =>
         services
             .AddValidators()
-            .AddMediatR();
+            .AddMediatR()
+            .AddTimeProvider();
 
     private static IServiceCollection AddValidators(this IServiceCollection services) =>
         services.AddValidatorsFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
@@ -27,4 +28,7 @@ public static class ApplicationExtensions
 
         return services;
     }
+
+    private static IServiceCollection AddTimeProvider(this IServiceCollection services) =>
+        services.AddSingleton(TimeProvider.System);
 }
