@@ -15,7 +15,7 @@ internal sealed class ExchangeRateConfiguration : IEntityTypeConfiguration<Excha
             .HasConversion(
                 currency => currency.Code,
                 value => Currency.Create(value).Value)
-            .HasMaxLength(3)
+            .HasMaxLength(Currency.MaxCodeLength)
             .IsRequired();
 
         builder.Property(x => x.Rate)
