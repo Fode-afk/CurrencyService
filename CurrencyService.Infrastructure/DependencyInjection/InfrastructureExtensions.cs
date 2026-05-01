@@ -25,7 +25,8 @@ public static class InfrastructureExtensions
             .AddServices()
             .AddDatabase(configuration)
             .AddCache(configuration)
-            .AddGrpc();
+            .AddGrpc()
+            .AddMassTransit(configuration);
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
@@ -100,6 +101,33 @@ public static class InfrastructureExtensions
         services.AddGrpc(options =>
         {
             options.Interceptors.Add<GrpcExceptionInterceptor>();
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddMassTransit(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddMassTransit(x =>
+        {
+            x.SetKebabCaseEndpointNameFormatter();         
+
+            x.AddEntityFrameworkOutbox<AppDbContext>(o =>
+            {
+                o.UseSqlServer();
+                o.UseBusOutbox();
+            });
+
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host(configuration["RabbitMQ:Host"]!, "/", h =>
+                {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
+
+                cfg.ConfigureEndpoints(context);
+            });
         });
 
         return services;
