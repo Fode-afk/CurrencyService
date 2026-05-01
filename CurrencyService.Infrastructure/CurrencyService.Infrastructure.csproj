@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Grpc.AspNetCore.Server" Version="2.76.0" />
-    <PackageReference Include="Grpc.Core.Api" Version="2.76.0" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
+    <PackageReference Include="Grpc.AspNetCore.Server" Version="2.80.0" />
+    <PackageReference Include="Grpc.Core.Api" Version="2.80.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
     <PackageReference Include="Grpc.Tools" Version="2.80.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -17,16 +17,16 @@
     <PackageReference Include="MassTransit" Version="8.5.9" />
     <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.5.9" />
     <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.7" />
     <PackageReference Include="Microsoft.SqlServer.Server" Version="1.0.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.12.14" />
     <PackageReference Include="ZiggyCreatures.FusionCache" Version="2.6.0" />

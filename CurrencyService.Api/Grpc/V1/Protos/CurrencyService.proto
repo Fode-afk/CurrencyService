@@ -4,18 +4,15 @@ option csharp_namespace = "CurrencyService.Api.Grpc.V1.Protos";
 
 package currency.v1;
 
-service CurrencyService
-{
+service CurrencyService {
 	rpc GetExchangeRate(GetExchangeRateRequest) returns (GetExchangeRateResponse);
 }
 
-message GetExchangeRateRequest
-{
+message GetExchangeRateRequest {
 	string currency_from = 1;
 	string currency_to = 2;
 }
 
-message GetExchangeRateResponse
-{
+message GetExchangeRateResponse {
 	string rate = 1;
 }

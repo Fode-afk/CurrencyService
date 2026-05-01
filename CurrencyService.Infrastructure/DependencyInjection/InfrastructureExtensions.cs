@@ -9,6 +9,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using migApp.Shared.Caching;
+using migApp.Shared.Grpc;
 using ZiggyCreatures.Caching.Fusion;
 using ZiggyCreatures.Caching.Fusion.Backplane.StackExchangeRedis;
 
@@ -24,7 +25,7 @@ public static class InfrastructureExtensions
             .AddServices()
             .AddDatabase(configuration)
             .AddCache(configuration)
-            .AddMassTransit(configuration);
+            .AddGrpc();
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
@@ -34,7 +35,6 @@ public static class InfrastructureExtensions
 
         return services;
     }
-       
 
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
@@ -95,28 +95,11 @@ public static class InfrastructureExtensions
         return services;
     }
 
-    private static IServiceCollection AddMassTransit(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddGrpc(this IServiceCollection services)
     {
-        services.AddMassTransit(x =>
+        services.AddGrpc(options =>
         {
-            x.SetKebabCaseEndpointNameFormatter();         
-
-            x.AddEntityFrameworkOutbox<AppDbContext>(o =>
-            {
-                o.UseSqlServer();
-                o.UseBusOutbox();
-            });
-
-            x.UsingRabbitMq((context, cfg) =>
-            {
-                cfg.Host(configuration["RabbitMQ:Host"]!, "/", h =>
-                {
-                    h.Username("guest");
-                    h.Password("guest");
-                });
-
-                cfg.ConfigureEndpoints(context);
-            });
+            options.Interceptors.Add<GrpcExceptionInterceptor>();
         });
 
         return services;
