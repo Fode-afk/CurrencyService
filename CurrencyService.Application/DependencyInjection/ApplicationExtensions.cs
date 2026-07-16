@@ -24,8 +24,6 @@ public static class ApplicationExtensions
             cfg.RegisterServicesFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
         });
 
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
         return services;
     }
 

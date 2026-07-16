@@ -17,10 +17,7 @@ internal sealed class Worker(ILogger<Worker> logger, IServiceScopeFactory scopeF
                 using var scope = scopeFactory.CreateScope();
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                var result = await mediator.Send(new UpdateExchangeRatesCommand(), cancellationToken: stoppingToken);
-
-                if (result.IsFailure)
-                    logger.LogError("Failed to update exchange rates");
+                await mediator.Send(new UpdateExchangeRatesCommand(), cancellationToken: stoppingToken);
             }
             catch (Exception ex)
             {

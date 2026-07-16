@@ -1,5 +1,6 @@
 ﻿using CurrencyService.Application.Caching;
 using CurrencyService.Application.Interfaces.Data;
+using CurrencyService.Application.Interfaces.Metrics;
 using CurrencyService.Application.Interfaces.Services;
 using CurrencyService.Domain.Models;
 using MassTransit;
@@ -7,9 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Messaging.IntegrationEvents.ExchangeRates;
-using migApp.Shared.Results;
 using ZiggyCreatures.Caching.Fusion;
-using static migApp.Shared.Results.ResultFactory;
 
 namespace CurrencyService.Application.Features.Commands.UpdateExchangeRates;
 
@@ -18,9 +17,10 @@ public sealed class UpdateExchangeRatesCommandHandler(
     IExchangeRateProvider provider,
     IPublishEndpoint publish,
     IFusionCache cache,
-    TimeProvider timeProvider) : IRequestHandler<UpdateExchangeRatesCommand, IResult>
+    ICurrencyMetrics metrics,
+    TimeProvider timeProvider) : IRequestHandler<UpdateExchangeRatesCommand>
 {
-    public async Task<IResult> Handle(UpdateExchangeRatesCommand request, CancellationToken cancellationToken)
+    public async Task Handle(UpdateExchangeRatesCommand request, CancellationToken cancellationToken)
     {
         var supported = new[] { Currency.USD, Currency.EUR, Currency.BYN, Currency.RUB };
 
@@ -63,10 +63,19 @@ public sealed class UpdateExchangeRatesCommandHandler(
 
         await context.SaveChangesAsync(cancellationToken);
 
+        metrics.RecordRatesUpdated(rates.Count);
+        metrics.RecordSuccessfulUpdate(now);
+
+        foreach (var expected in supported)
+        {
+            if (!rates.ContainsKey(expected.Code))
+                metrics.RecordRateMissing(expected.Code);
+        }
+
         await cache.RemoveByTagAsync(
             CacheTags.ExchangeRateByBaseCurrency(), 
             token: cancellationToken);
 
-        return Ok();
+        metrics.RecordCacheInvalidation("exchange-rate-by-base-currency");
     }
 }

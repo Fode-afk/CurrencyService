@@ -1,9 +1,13 @@
-﻿using CurrencyService.Application.Interfaces.Services;
+﻿using CurrencyService.Application.Interfaces.Metrics;
+using CurrencyService.Application.Interfaces.Services;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace CurrencyService.Infrastructure.Services;
 
-internal sealed class ExchangeRateApiProvider(IHttpClientFactory factory) : IExchangeRateProvider
+internal sealed class ExchangeRateApiProvider(
+    IHttpClientFactory factory,
+    ICurrencyMetrics metrics) : IExchangeRateProvider
 {
     private readonly HttpClient _client = factory.CreateClient();
     private readonly JsonSerializerOptions _options = new()
@@ -11,22 +15,28 @@ internal sealed class ExchangeRateApiProvider(IHttpClientFactory factory) : IExc
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<decimal?> GetRateAsync(string currency, CancellationToken cancellationToken = default)
-    {
-        var rates = await GetAllRates(cancellationToken);
-
-        return rates.TryGetValue(currency, out var rate)
-            ? rate
-            : null;
-    }
-
     public async Task<Dictionary<string, decimal>> GetRatesAsync(string[] currencies, CancellationToken cancellationToken = default)
     {
-        var rates = await GetAllRates(cancellationToken);
+        metrics.RecordProviderCall();
+        var sw = Stopwatch.StartNew();
 
-        return rates
-            .Where(x => currencies.Contains(x.Key))
-            .ToDictionary(x => x.Key, x => x.Value);
+        try
+        {
+            var rates = await GetAllRates(cancellationToken);
+
+            return rates
+                .Where(x => currencies.Contains(x.Key))
+                .ToDictionary(x => x.Key, x => x.Value);
+        }
+        catch (Exception ex)
+        {
+            metrics.RecordProviderFailure(ex.GetType().Name);
+            throw;
+        }
+        finally
+        {
+            metrics.RecordProviderDuration(sw.Elapsed.TotalMilliseconds);
+        }
     }
 
     private async Task<Dictionary<string, decimal>> GetAllRates(CancellationToken cancellationToken = default)

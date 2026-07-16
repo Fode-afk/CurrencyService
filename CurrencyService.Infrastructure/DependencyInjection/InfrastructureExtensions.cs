@@ -1,15 +1,25 @@
 ﻿using CurrencyService.Application.Interfaces.Data;
+using CurrencyService.Application.Interfaces.Metrics;
 using CurrencyService.Application.Interfaces.Services;
 using CurrencyService.Infrastructure.BackgroundJobs;
+using CurrencyService.Infrastructure.Behaviours;
 using CurrencyService.Infrastructure.Data;
+using CurrencyService.Infrastructure.Observability;
 using CurrencyService.Infrastructure.Services;
 using MassTransit;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using migApp.Shared.Behaviours;
 using migApp.Shared.Caching;
 using migApp.Shared.Grpc;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using RabbitMQ.Client;
 using ZiggyCreatures.Caching.Fusion;
 using ZiggyCreatures.Caching.Fusion.Backplane.StackExchangeRedis;
 
@@ -26,7 +36,10 @@ public static class InfrastructureExtensions
             .AddDatabase(configuration)
             .AddCache(configuration)
             .AddGrpc()
-            .AddMassTransit(configuration);
+            .AddHealthChecks(configuration)
+            .AddMassTransit(configuration)
+            .AddObservability(configuration)
+            .AddBehaviours();
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
@@ -106,6 +119,32 @@ public static class InfrastructureExtensions
         return services;
     }
 
+    private static IServiceCollection AddHealthChecks(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddGrpcHealthChecks()
+            .AddCheck("self", () => HealthCheckResult.Healthy("Service is running"))
+            .AddSqlServer(
+                connectionString: configuration.GetConnectionString("DefaultConnection")!,
+                name: "mssql",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["ready"])
+            .AddRabbitMQ(
+                factory: sp =>
+                {
+                    var factory = new ConnectionFactory()
+                    {
+                        HostName = configuration["RabbitMQ:Host"]!,
+                        Port = int.Parse(configuration["RabbitMQ:Port"]!)
+                    };
+                    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+                },
+                name: "rabbitmq",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["ready"]);
+
+        return services;
+    }
+
     private static IServiceCollection AddMassTransit(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddMassTransit(x =>
@@ -129,6 +168,48 @@ public static class InfrastructureExtensions
                 cfg.ConfigureEndpoints(context, new KebabCaseEndpointNameFormatter("currency-service", false));
             });
         });
+
+        return services;
+    }
+
+    private static IServiceCollection AddObservability(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var otlpEndpoint = configuration.GetConnectionString("OtlpEndpoint")
+            ?? throw new InvalidOperationException("OtlpEndpoint is not configured");
+
+        services.AddOpenTelemetry()
+            .WithTracing(tracing => tracing
+                .SetResourceBuilder(ResourceBuilder
+                    .CreateDefault()
+                    .AddService("CurrencyService"))
+                .AddAspNetCoreInstrumentation(opts =>
+                    opts.Filter = ctx =>
+                        !ctx.Request.Path.StartsWithSegments("/health"))
+                .AddHttpClientInstrumentation()
+                .AddSource("MassTransit")
+                .AddSource("CurrencyService")
+                .AddOtlpExporter(opts => opts.Endpoint = new Uri(otlpEndpoint)))
+            .WithMetrics(metrics => metrics
+                .SetResourceBuilder(ResourceBuilder
+                    .CreateDefault()
+                    .AddService("CurrencyService"))
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation()
+                .AddMeter(CurrencyServiceMetrics.MeterName)
+                .AddOtlpExporter(opts => opts.Endpoint = new Uri(otlpEndpoint)));
+
+        services.AddSingleton<ICurrencyMetrics, CurrencyServiceMetrics>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddBehaviours(this IServiceCollection services)
+    {
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingBehaviour<,>));
 
         return services;
     }
