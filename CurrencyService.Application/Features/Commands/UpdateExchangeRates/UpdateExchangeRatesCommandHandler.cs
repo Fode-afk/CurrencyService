@@ -22,13 +22,11 @@ public sealed class UpdateExchangeRatesCommandHandler(
 {
     public async Task Handle(UpdateExchangeRatesCommand request, CancellationToken cancellationToken)
     {
-        var supported = new[] { Currency.USD, Currency.EUR, Currency.BYN, Currency.RUB };
-
         var exchangeRates = await context.ExchangeRates
-            .Where(x => supported.Contains(x.Currency))
+            .Where(x => Currency.All.Contains(x.Currency))
             .ToListAsync(cancellationToken);
 
-        var rates = await provider.GetRatesAsync([..supported.Select(c => c.Code)], cancellationToken);
+        var rates = await provider.GetRatesAsync([..Currency.All.Select(c => c.Code)], cancellationToken);
 
         var now = timeProvider.GetUtcNow();
 
@@ -66,7 +64,7 @@ public sealed class UpdateExchangeRatesCommandHandler(
         metrics.RecordRatesUpdated(rates.Count);
         metrics.RecordSuccessfulUpdate(now);
 
-        foreach (var expected in supported)
+        foreach (var expected in Currency.All)
         {
             if (!rates.ContainsKey(expected.Code))
                 metrics.RecordRateMissing(expected.Code);
@@ -75,7 +73,5 @@ public sealed class UpdateExchangeRatesCommandHandler(
         await cache.RemoveByTagAsync(
             CacheTags.ExchangeRateByBaseCurrency(), 
             token: cancellationToken);
-
-        metrics.RecordCacheInvalidation("exchange-rate-by-base-currency");
     }
 }

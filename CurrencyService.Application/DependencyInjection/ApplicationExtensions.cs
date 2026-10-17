@@ -1,8 +1,6 @@
 ﻿using CurrencyService.Application.DependencyInjection;
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using migApp.Shared.Behaviours;
 
 namespace CurrencyService.Application.DependencyInjection;
 

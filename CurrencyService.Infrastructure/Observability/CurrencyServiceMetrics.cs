@@ -15,10 +15,6 @@ public sealed class CurrencyServiceMetrics : IDisposable, ICurrencyMetrics
     private readonly Counter<long> _exchangeRateProviderFailures;
     private readonly Histogram<double> _exchangeRateProviderDuration;
 
-    private readonly Counter<long> _cacheHits;
-    private readonly Counter<long> _cacheMisses;
-    private readonly Counter<long> _cacheInvalidations;
-
     private readonly Counter<long> _ratesUpdated;
     private readonly Counter<long> _ratesMissing;
 
@@ -43,10 +39,6 @@ public sealed class CurrencyServiceMetrics : IDisposable, ICurrencyMetrics
         _exchangeRateProviderDuration = _meter.CreateHistogram<double>(
             "currency.provider.duration",
             unit: "ms");
-
-        _cacheHits = _meter.CreateCounter<long>("currency.cache.hits");
-        _cacheMisses = _meter.CreateCounter<long>("currency.cache.misses");
-        _cacheInvalidations = _meter.CreateCounter<long>("currency.cache.invalidations");
 
         _ratesUpdated = _meter.CreateCounter<long>(
             "currency.rates.updated",
@@ -81,17 +73,6 @@ public sealed class CurrencyServiceMetrics : IDisposable, ICurrencyMetrics
         _exchangeRateProviderFailures.Add(1, new KeyValuePair<string, object?>("reason", reason));
 
     public void RecordProviderDuration(double ms) => _exchangeRateProviderDuration.Record(ms);
-
-    public void RecordCacheHitOrMiss(string cacheKeyPrefix, bool wasHit)
-    {
-        if (wasHit)
-            _cacheHits.Add(1, new KeyValuePair<string, object?>("key_prefix", cacheKeyPrefix));
-        else
-            _cacheMisses.Add(1, new KeyValuePair<string, object?>("key_prefix", cacheKeyPrefix));
-    }
-
-    public void RecordCacheInvalidation(string tag) =>
-        _cacheInvalidations.Add(1, new KeyValuePair<string, object?>("tag_type", tag));
 
     public void RecordRatesUpdated(int count) => _ratesUpdated.Add(count);
 
