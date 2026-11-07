@@ -17,7 +17,6 @@ public sealed class ExchangeRate
         UpdatedAt = updatedAt;
     }
 
-    public static Currency BaseCurrency => Currency.USD;
     public Currency Currency { get; private set; }
     public decimal Rate { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }

@@ -125,11 +125,7 @@ public static class InfrastructureExtensions
 
     private static IServiceCollection AddGrpcServices(this IServiceCollection services)
     {
-        services.AddGrpc(options =>
-        {
-            options.Interceptors.Add<GrpcExceptionInterceptor>();
-        });
-
+        services.AddGrpc(options => options.Interceptors.Add<GrpcExceptionInterceptor>());
         return services;
     }
 
@@ -260,11 +256,8 @@ public static class InfrastructureExtensions
         return services;
     }
 
-    private static IServiceCollection AddBehaviours(this IServiceCollection services)
-    {
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingBehaviour<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
-        return services;
-    }
+    private static IServiceCollection AddBehaviours(this IServiceCollection services) =>
+        services
+            .AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingBehaviour<,>))
+            .AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 }
